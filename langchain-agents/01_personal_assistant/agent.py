@@ -7,9 +7,9 @@ across multiple sessions using Memstate.
 Key concepts:
 - MemstateStore: drop-in LangGraph BaseStore with versioned, semantic memory
 - get_memstate_tools: gives the agent tools to read/write memory explicitly
-- memstate_remember: auto-extracts structured facts from natural language
-  (async, uses LLM extraction — best for unstructured text)
-- memstate_store: direct synchronous keypath write — best for precise facts
+- memstate_remember: RECOMMENDED — auto-extracts structured facts from natural
+  language using Memstate's custom LLMs (async ingestion)
+- memstate_store: direct synchronous keypath write for precise, known keypaths
 - memstate_recall: semantic search across all memories
 - memstate_browse: browse the knowledge tree by keypath prefix
 
@@ -40,7 +40,7 @@ store = MemstateStore(api_key=API_KEY, project_id=PROJECT_ID)
 
 # Get the Memstate tools for the agent
 # These allow the agent to explicitly read/write memory:
-#   - memstate_remember: auto-extract facts from any text (async, uses LLM)
+#   - memstate_remember: RECOMMENDED — auto-extract facts from any text (async, uses LLM)
 #   - memstate_store: store a specific value at an exact keypath (synchronous)
 #   - memstate_recall: semantic search across all memories
 #   - memstate_browse: browse the knowledge tree by keypath prefix
@@ -57,9 +57,8 @@ agent = create_react_agent(
     store=store,
     prompt=(
         "You are a helpful personal assistant with access to a persistent memory system. "
-        "When a user shares specific facts about themselves (name, role, preferences), "
-        "use the memstate_store tool to store each fact at a precise keypath "
-        "(e.g., 'users.alice.role', 'users.alice.preferences.language'). "
+        "When a user shares information about themselves, use the memstate_remember tool to store it. "
+        "Memstate will automatically extract and organize the facts into structured keypaths. "
         "When answering questions, first use memstate_recall or memstate_browse to check what you know. "
         "Always be transparent about what you remember."
     ),
@@ -87,7 +86,9 @@ if __name__ == "__main__":
     print(f"Project ID: {PROJECT_ID}")
 
     # Session 1: User shares preferences
-    # The agent will call memstate_store to store these facts at precise keypaths:
+    # The agent will call memstate_remember to store these facts.
+    # Memstate's custom LLMs will automatically extract and organize them into
+    # structured keypaths like:
     #   users.alice.role = "Senior Backend Engineer"
     #   users.alice.preferences.language = "Python"
     #   users.alice.preferences.framework = "FastAPI"
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     )
 
     # Session 3: Updating memory
-    # The agent will call memstate_store with the new preference.
+    # The agent will call memstate_remember with the new preference.
     # Memstate creates a NEW VERSION of the language keypath — the old value is preserved.
     run_session(
         "session_3",

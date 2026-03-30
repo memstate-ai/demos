@@ -5,7 +5,7 @@ Shows how to use Memstate as a shared knowledge graph for a swarm of
 specialized LangGraph agents.
 
 Three agents share the same Memstate project_id:
-  1. Researcher  — gathers facts and stores them with memstate_store
+  1. Researcher  — gathers facts and stores them with memstate_remember
   2. Analyst     — reads facts with memstate_recall, adds analysis
   3. Writer      — browses the full tree with memstate_browse, writes a report
 
@@ -13,8 +13,8 @@ Key concepts:
 - All agents write to the same project_id, creating a shared knowledge graph
 - Memstate automatically handles versioning if agents update the same keypath
 - Agents communicate through memory, not through direct message passing
-- memstate_store: synchronous direct keypath write (best for structured facts)
-- memstate_remember: async LLM-extracted write (best for natural language)
+- memstate_remember: RECOMMENDED — async LLM-extracted write for any text
+- memstate_store: synchronous direct keypath write for precise facts
 
 Requirements:
     pip install langchain-memstate langchain-openai langgraph python-dotenv
@@ -51,16 +51,16 @@ tools = get_memstate_tools(api_key=API_KEY, project_id=PROJECT_ID)
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # Agent 1: The Researcher
-# Gathers raw facts and stores them using memstate_store at precise keypaths
+# Gathers raw facts and stores them using memstate_remember
+# Memstate's custom LLMs automatically extract and organize the facts
 researcher = create_react_agent(
     llm,
     tools=tools,
     store=store,
     prompt=(
         "You are a researcher. Your job is to find facts and use the "
-        "memstate_store tool to store them in the shared memory at precise keypaths. "
-        "Use keypaths like 'research.architecture.core_concepts', "
-        "'research.architecture.key_features', etc. "
+        "memstate_remember tool to store them in the shared memory. "
+        "Memstate will automatically extract and organize the facts. "
         "Be thorough and store all key facts you discover."
     ),
 )
@@ -73,9 +73,8 @@ analyst = create_react_agent(
     store=store,
     prompt=(
         "You are an analyst. Your job is to use memstate_recall to read the "
-        "facts stored by the researcher, analyze them, and use memstate_store "
-        "to store your conclusions at keypaths like 'analysis.advantages', "
-        "'analysis.use_cases', etc."
+        "facts stored by the researcher, analyze them, and use memstate_remember "
+        "to store your conclusions and insights."
     ),
 )
 
@@ -100,12 +99,12 @@ def run_pipeline():
     print("--- Phase 1: Researcher ---")
     research_prompt = (
         "Research the memory system architecture for Memstate AI. "
-        "Key facts to store: "
+        "Key facts: "
         "1. It uses hierarchical keypaths (like users.alice.preferences.language). "
         "2. Custom LLMs are used for automatic fact extraction from natural language. "
         "3. Every write automatically creates a new version (immutable history). "
         "4. Semantic search is supported across all memories. "
-        "Store each fact at a precise keypath using memstate_store."
+        "Store all these facts in memory using memstate_remember."
     )
     print(f"Task: {research_prompt}")
     researcher.invoke({"messages": [{"role": "user", "content": research_prompt}]})
@@ -117,7 +116,7 @@ def run_pipeline():
         "Recall the facts about Memstate AI's architecture. "
         "Analyze why hierarchical keypaths are better than flat vector stores for AI agents. "
         "Consider: precision retrieval, no duplicate facts, audit trails, and token efficiency. "
-        "Store your analysis using memstate_store."
+        "Store your analysis in memory using memstate_remember."
     )
     print(f"Task: {analysis_prompt}")
     analyst.invoke({"messages": [{"role": "user", "content": analysis_prompt}]})
